@@ -40,10 +40,10 @@ jobs:
     runs-on:
       - windows-2019
     steps:
-      - name: Setup Golang 1.17
+      - name: Setup Golang 1.22
         uses: actions/setup-go@v3
         with:
-          go-version: '1.17'
+          go-version: '1.22'
       - name: Install build dependencies from chocolatey
         run: choco install qt5-default mingw sigcheck qt-installer-framework
       - run: git config --global core.autocrlf input
@@ -74,41 +74,38 @@ jobs:
 
   build-mac:
     runs-on:
-    - macos-11
+    - macos-12
     steps:
-      - name: Setup Golang 1.17
-        uses: actions/setup-go@v3
+      - name: Setup Golang 1.21
+        uses: actions/setup-go@v4
         with:
-          go-version: '1.17'
+          go-version: '1.21'
       - run: go version
       - name: Install build dependencies from brew
-        run: brew install qt5 make create-dmg && brew link qt5
+        run: brew install python make create-dmg pipx
+      - name: Install aqt installer
+        run: pipx install aqtinstall
+      - name: Setup Qt6 using aqt
+        run: aqt install-qt mac desktop 6.6.2 clang_64 -O ~/Qt6
       - name: Install Qt installer framework
         run: >
           cd /tmp &&
-          curl -LO https://download.qt.io/official_releases/qt-installer-framework/4.0.1/QtInstallerFramework-mac-x64.dmg &&
-          hdiutil attach QtInstallerFramework-mac-x64.dmg &&
-          cd /Volumes/QtInstallerFramework-mac-x64/QtInstallerFramework-mac-x64.app/Contents/MacOS &&
-          ./QtInstallerFramework-mac-x64 in --da -c --al
+          curl -LO https://download.qt.io/official_releases/qt-installer-framework/4.7.0/QtInstallerFramework-macOS-x64-4.7.0.dmg &&
+          hdiutil attach QtInstallerFramework-macOS-x64-4.7.0.dmg &&
+          cd /Volumes/QtInstallerFramework-macOS-x64-4.7.0/QtInstallerFramework-macOS-x64-4.7.0.app/Contents/MacOS &&
+          ./QtInstallerFramework-macOS-x64-4.7.0 in --da -c --al
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
+        with:
+          fetch-tags: true
       - name: Set requested provider name
-        run: sed -i.bak 's/provider = riseup/provider = ${{ inputs.provider_name }}/1' providers/vendor.conf
+        run: make vendor
       - name: Build .app
-        run: >
-          export PATH=~/Qt/QtIFW-4.0.1/bin:$PATH &&
-          make clean && make vendor && make build
+        run: PATH="~/Qt6/6.6.2/macos/bin:~/Qt/QtIFW-4.7.0/bin:$PATH" make QMAKE=qmake6 build
       - name: Build installer
-        run: export PATH=~/Qt/QtIFW-4.0.1/bin:$PATH && make installer
-      - name: Build dmg
-        run: export PATH=~/Qt/QtIFW-4.0.1/bin:$PATH && make create_dmg
+        run: PATH="~/Qt6/6.6.2/macos/bin:~/Qt/QtIFW-4.7.0/bin:$PATH" make QMAKE=qmake6 installer
       - name: Upload build/qt/release/riseup-vpn.app
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: riseup-vpn-app-${{ github.sha }}
           path: build/qt/release/riseup-vpn.app
-      - name: Upload deploy/RiseupVPN-unknown.dmg
-        uses: actions/upload-artifact@v3
-        with:
-          name: riseup-vpn-dmg-${{ github.sha }}
-          path: deploy/RiseupVPN-unknown.dmg
