@@ -377,10 +377,12 @@ func (b *Bitmask) StopVPN() error {
 		return err
 	}
 	if b.obfsvpnProxy != nil {
-		if _, err := b.obfsvpnProxy.Stop(); err != nil {
-			log.Debug().Err(err).Msg("Error while stop obfsvpn proxy")
-		}
-		b.obfsvpnProxy = nil
+		go func() {
+			if _, err := b.obfsvpnProxy.Stop(); err != nil {
+				log.Debug().Err(err).Msg("Error while stop obfsvpn proxy")
+			}
+			b.obfsvpnProxy = nil
+		}()
 	}
 	b.tryStopFromManagement()
 	if err := b.launch.OpenvpnStop(); err != nil {
