@@ -309,7 +309,7 @@ ThemedPage {
                 }
                 PropertyChanges {
                     target: useBridgesCheckBox
-                    enabled: true
+                    enabled: true && (ctx && ctx.provider == "bitmask")
                 }
                 PropertyChanges {
                     target: useUDP
@@ -317,7 +317,7 @@ ThemedPage {
                 }
                 PropertyChanges {
                     target: useKCP
-                    enabled: true
+                    enabled: true && (ctx && ctx.provider == "bitmask")
                 }
             }
         ]
@@ -325,6 +325,9 @@ ThemedPage {
 
     function areBridgesAvailable() {
         // FIXME check if provider offers it
+        if (ctx && ctx.provider == "riseup") {
+            return false
+        }
         let providerSupport = true
         return providerSupport && !useUDP.checked
     }
